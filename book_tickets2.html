@@ -1,0 +1,55 @@
+{% include 'chead.html' %}
+<div class="home-bgr">
+    <form action="book_tickets3">
+        <div class="title text-center">Passenger Details</div>
+        <div>
+            <input type="hidden" name="schedule_id" value="{{schedule_id}}">
+            <input type="hidden" name="total_seats" value="{{total_seats}}">
+            <input type="hidden" name="class_type" value="{{class_type}}">
+            <input type="hidden" name="total_price" value="{{total_price}}">
+        </div>
+        {% for selected_seat in selected_seats %}
+        <div class="p-10">
+            <fieldset class="p-5 color">
+                <legend class="p-5"><b>seat {{selected_seat}}</b>:</legend>
+                <div class="row">
+                    <div>
+                    <input type="hidden" name="seat_number{{selected_seat}}" value="{{selected_seat}}">
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Name</div>
+                        <input type="text" placeholder="Enter name" class="form-control" name="name{{selected_seat}}" required>
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Age</div>
+                        <input type="number" placeholder="Enter age" class="form-control" name="age{{selected_seat}}" required>
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Phone</div>
+                        <input type="number" placeholder="Enter phone" class="form-control" name="phone{{selected_seat}}" required>
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Dob</div>
+                        <input type="date"  class="form-control" name="dob{{selected_seat}}" required>
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Email</div>
+                        <input type="email" placeholder="Enter Email" class="form-control" name="email{{selected_seat}}" required>
+                    </div>
+                    <div class="col-3 p-5">
+                        <div class="" style="font-size:10px">Gender</div>
+                        <select name="gender{{selected_seat}}" class="form-control"  required>
+                            <option value="">choose Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+        {% endfor %}
+        <div class="mt-5">
+            <input type="submit" value="proceed" class="btn btn-primary">
+        </div>
+    </form>
+</div>

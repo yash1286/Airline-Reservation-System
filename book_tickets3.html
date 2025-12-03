@@ -1,0 +1,68 @@
+{% include 'chead.html' %}
+<div class="home-bgr">
+    <div class="row">
+        <div class="col-8 p-10">
+            <table border="1" class="table">
+                <thead>
+                   <tr>
+                       <th>Name</th>
+                       <th>Age</th>
+                       <th>Phone</th>
+                       <th>Email</th>
+                       <th>DOB</th>
+                       <th>Gender</th>
+                       <th>Seat.No</th>
+                       <th>Class Type</th>
+                   </tr>
+                </thead>
+                <tbody>
+                {% for boarding_pass in boarding_passes %}
+                     <tr>
+                         <td>{{boarding_pass['name']}}</td>
+                         <td>{{boarding_pass['age']}}</td>
+                         <td>{{boarding_pass['phone']}}</td>
+                         <td>{{boarding_pass['email']}}</td>
+                         <td>{{boarding_pass['dob']}}</td>
+                         <td>{{boarding_pass['gender']}}</td>
+                         <td>{{boarding_pass['seat_number']}}</td>
+                         <td>{{booking['class_type']}}</td>
+                     </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-4 p-10">
+            <div class="card">
+                <div class="text-center bold">$ {{total_price}}</div>
+                <form action="payments">
+                    <div>
+                        <input type="hidden" name="total_price" value="{{total_price}}">
+                        <input type="hidden" name="booking_id" value="{{booking_id}}">
+                    </div>
+                    <div class="p-5">
+                        <select required class="form-control" name="card_type">
+                            <option value="">Choose Card</option>
+                            <option value="credit card">Credit Card</option>
+                            <option value="debit card">Debit Card</option>
+                        </select>
+                    </div>
+                    <div class="p-5">
+                        <input type="number" class="form-control" placeholder="enter cardnumber" name="card_number">
+                    </div>
+                    <div class="p-5">
+                        <input type="text" class="form-control" placeholder="enter card holder name" name="card_holder_name">
+                    </div>
+                    <div class="p-5">
+                        <input type="number" class="form-control" placeholder="enter cvv" name="cvv">
+                    </div>
+                    <div class="p-5">
+                        <input type="month" class="form-control" name="expiry_date">
+                    </div>
+                    <div class="p-5">
+                        <input type="submit" value="Make Payment" class="btn-1 btn-primary">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

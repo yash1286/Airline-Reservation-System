@@ -1,0 +1,37 @@
+{% include 'chead.html' %}
+<div class="home-bgr">
+    <div>.</div>
+    <div class="card color">
+        <h2 class="bold text-center ">Payment Details</h2>
+        <div class="p-20">
+            <div class="row">
+                <div class="bold">Amount:</div>
+                <div>{{payment['amount']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">Status:</div>
+                <div>{{payment['status']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">Payment Date:</div>
+                <div>{{payment['payment_date']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">Card Number:</div>
+                <div>{{payment['card_number']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">Card Type:</div>
+                <div>{{payment['card_type']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">CVV:</div>
+                <div>{{payment['cvv']}}</div>
+            </div>
+            <div class="row">
+                <div class="bold">Expiry Date:</div>
+                <div>{{payment['expiry_date']}}</div>
+            </div>
+        </div>
+    </div>
+</div>

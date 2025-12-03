@@ -1,0 +1,76 @@
+{% include 'chead.html' %}
+<div class="home-bgr">
+    {% set airport1=get_source_airport_name_by_airport_id(schedule['source_airport_id']) %}
+    {% set location1=get_source_location_by_airport_id(airport1['location_id']) %}
+    {% set airport2=get_destination_airport_name_by_airport_id(schedule['destination_airport_id']) %}
+    {% set location2=get_destination_location_by_airport_id(airport2['location_id']) %}
+    {% set airplane=get_seats_by_airplane_id(schedule['airplane_id']) %}
+            <div class="card-2 mt-10 p-10 color">
+                <div class="row">
+                        <div class="col-6">
+                            <div class="row">
+                                <div class="col-5 text-center">
+                                    <div>{{location1['location']}}</div>
+                                    <div>{{airport1['airport']}}</div>
+                                    <div>{{schedule['departure_date_time']}}</div>
+                                </div>
+                                <div class="col-2 mt-10 bold">
+                                    <div class="text-center">{{schedule['duration']}}</div>
+                                    <div class="text-center">-----></div>
+                                </div>
+                                <div class="col-5 text-center">
+                                    <div>{{location2['location']}}</div>
+                                    <div>{{airport2['airport']}}</div>
+                                    <div>{{schedule['arrival_date_time']}}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="row">
+                                <div class="col-4 text-center">
+                                    <div class="bold">First Class</div>
+                                    <div>{{airplane['first_class_available_seats']}} available ${{schedule['first_class_price']}}</div>
+                                    <a href="/book_ticket?schedule_id={{schedule['_id']}}&class_type=first_class&total_seats={{airplane['first_class_available_seats']}}" class="btn-2 btn-primary-1">Book</a>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="bold">Economy Class</div>
+                                    <div>{{airplane['economy_class_available_seats']}} available ${{schedule['economic_class_price']}}</div>
+                                    <a href="/book_ticket?schedule_id={{schedule['_id']}}&class_type=economy_class&total_seats={{airplane['economy_class_available_seats']}}" class="btn-2 btn-primary-1">Book</a>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="bold">Business Class</div>
+                                    <div>{{airplane['business_class_available_seats']}} available ${{schedule['business_class_price']}}</div>
+                                    <a href="/book_ticket?schedule_id={{schedule['_id']}}&class_type=business_class&total_seats={{airplane['business_class_available_seats']}}" class="btn-2 btn-primary-1">Book</a>
+                            </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+    <form action="book_tickets2">
+        <div class="mt-10">
+            <input type="submit" value="book" class="btn btn-primary">
+        </div>
+        <div>
+            <input type="hidden" name="schedule_id" value="{{schedule_id}}">
+        </div>
+        <div>
+            <input type="hidden" name="class_type" value="{{class_type}}">
+            <input type="hidden" name="total_seats" value="{{total_seats}}">
+        </div>
+        <div class="row">
+            {% for i in range(1,total_seats+1) %}
+                {% set is_booked = is_seat_booked_by_seat_number_and_schedule_id_and_class_type(i, schedule_id, class_type) %}
+                <div class="">
+                    <div class="">
+                        {% if is_booked %}
+                            <label  class="seat-booked">{{i}}</label>
+                        {% else %}
+                            <input type="checkbox" id="seat{{i}}" name="seat{{i}}" class="seat-checkbox">
+                            <label for="seat{{i}}" class="seat">{{i}}</label>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </form>
+</div>

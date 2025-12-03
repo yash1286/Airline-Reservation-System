@@ -1,0 +1,122 @@
+{% if session['role']=='airline' %}
+    {% include 'airlinehead.html' %}
+{% endif %}
+{% if session['role']=='customer' %}
+    {% include 'chead.html' %}
+{% endif %}
+<div class="home-bgr">
+    <div class="title text-center">View Bookings</div>
+    <div class="">
+        {% for booking in bookings %}
+        {% set schedule=get_schedule_by_schedule_id(booking['schedule_id']) %}
+        {% set airport1=get_source_airport_name_by_airport_id(schedule['source_airport_id']) %}
+        {% set location1=get_source_location_by_airport_id(airport1['location_id']) %}
+        {% set airport2=get_destination_airport_name_by_airport_id(schedule['destination_airport_id']) %}
+        {% set location2=get_destination_location_by_airport_id(airport2['location_id']) %}
+        {% set airplane=get_seats_by_airplane_id(schedule['airplane_id']) %}
+        {% set customer=get_customer_by_customer_id(booking['customer_id']) %}
+        {% set boarding_passes=get_boarding_pass_by_booking_id(booking['_id'])%}
+        {% set payment=get_payment_details_by_booking_id(booking['_id']) %}
+        {% set diff_str,hours=diff_hours_from_today_and_departure_time(schedule['departure_date_time']) %}
+           <div class="card-2 mt-10 p-10 color">
+               <div class="row">
+                   <div class="col-6">
+                       <div class="row">
+                           <div class="col-5 text-center">
+                               <div>{{location1['location']}}</div>
+                               <div>{{airport1['airport']}}</div>
+                               <div>{{schedule['departure_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                           </div>
+                           <div class="col-2 mt-10 bold">
+                               <div class="text-center">{{schedule['duration']}}</div>
+                               <div class="text-center">-----></div>
+                           </div>
+                           <div class="col-5 text-center">
+                               <div>{{location2['location']}}</div>
+                               <div>{{airport2['airport']}}</div>
+                               <div>{{schedule['arrival_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                           </div>
+                       </div>
+                   </div>
+                   <div class="col-6">
+                       <div class="row">
+                           <div class="col-4 text-center">
+                               <div class="bold ">Customer Details</div>
+                               <div>{{customer['first_name']}} {{customer['last_name']}}</div>
+                               <div>{{customer['phone']}}</div>
+                           </div>
+                           <div class="col-4 text-center">
+                               <div class="bold">Booked On:</div>
+                               <div>{{booking['booking_date'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                               <div class="bold">${{booking['total_price']}}</div>
+                           </div>
+                           <div class="col-4 text-center">
+                               <div class="bold">Status:{{booking['status']}}</div>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+               <div class="row mt-20">
+                   {% if session['role']=="customer" %}
+                   <div class="col-4 bold">
+                       {% if booking['status']=="Booked" %}
+                       {% if hours>12 %}
+                       <div class="row">
+                       <div class="col-7 p-5 text-center">You will get ${{int(booking['total_price'])*0.9}} (90%) if you cancel now </div>
+                       <div class="p-5 col-5"><a href="/cancel?booking_id={{booking['_id']}}&payment_id={{payment['_id']}}&refund_amount={{int(booking['total_price'])*0.9}}" class="btn-3 btn-primary">Cancel</a></div>
+                       </div>
+                       {% endif %}
+                       {% endif %}
+                   </div>
+                   {% endif %}
+                   {% if session['role']=="airline" %}
+                       <div class="col-4"></div>
+                   {% endif %}
+                   <div class="col-4 bold p-5">
+                       {% if diff_str == "" %}
+                          <h2 class="error-1">Flight Departed</h2>
+                       {% else %}
+                       <div class="text-center">Flight will start in: {{diff_str}}</div>
+                       {% endif %}
+                   </div>
+
+                    <div class="col-2">
+                        <div class="p-5"><a href="/boarding_pass?booking_id={{booking['_id']}}" class="btn-3 btn-primary">Boarding Pass</a></div>
+                   </div>
+                   <div class="col-2">
+                       <div class="p-5"><a href="/view_payments?booking_id={{booking['_id']}}" class="btn-3 btn-primary">View Payments</a></div>
+                   </div>
+               </div>
+               <div class="mt-10">
+                   <div>
+                       <div class="title text-center">Passenger Details</div>
+                   </div>
+                       <table border="1" class="table-1">
+                           <thead>
+                           <tr>
+                               <th>Seat No</th>
+                               <th>Name</th>
+                               <th>Phone</th>
+                               <th>Age</th>
+                               <th>Gender</th>
+                               <th>Class Type</th>
+                           </tr>
+                           </thead>
+                           <tbody>
+                           {% for boarding_pass in boarding_passes %}
+                           <tr class="text-center">
+                               <td>{{boarding_pass['seat_number']}}</td>
+                               <td>{{boarding_pass['name']}}</td>
+                               <td>{{boarding_pass['phone']}}</td>
+                               <td>{{boarding_pass['age']}}</td>
+                               <td>{{boarding_pass['gender']}}</td>
+                               <td>{{booking['class_type']}}</td>
+                           </tr>
+                           {% endfor %}
+                           </tbody>
+                       </table>
+               </div>
+           </div>
+       {% endfor %}
+    </div>
+</div>

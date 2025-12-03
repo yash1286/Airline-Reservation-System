@@ -1,0 +1,132 @@
+{% include 'airlinehead.html' %}
+<div class="home-bgr">
+     <div class="title text-center">View Schedules</div>
+    <div class="text-center bold">Schedules</div>
+          {% if len(future_schedules)!=0 %}
+           <div class="row">
+            {% for future_schedule in future_schedules %}
+            {% set airplane=get_total_tickets_by_airplane_id(future_schedule['airplane_id'])%}
+            {% set booked_tickets_business=get_booked_seats_by_schedule_id(future_schedule['_id'],'business_class') %}
+            {% set booked_tickets_economy=get_booked_seats_by_schedule_id(future_schedule['_id'],'economy_class') %}
+            {% set booked_tickets_first=get_booked_seats_by_schedule_id(future_schedule['_id'],'first_class') %}
+            {% set airport1=get_destination_airport_name_by_airport_id(future_schedule['destination_airport_id']) %}
+            {% set airport2=get_source_airport_name_by_airport_id(future_schedule['source_airport_id']) %}
+            {% set airplane=get_airplane_name_by_airplane_id(future_schedule['airplane_id']) %}
+                <div class="col-6 p-10">
+                     <div class="card-2 color p-5">
+                         <div class="font bold text-center">{{airplane['airplane_name']}}</div>
+                            <div class="row"><div class="bold">Arrival DateTime:</div>{{future_schedule['arrival_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                            <div class="row"><div class="bold">Departure DateTime:</div>{{future_schedule['departure_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                         <div class="row">
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class=" bold text-center">Business Class</div>
+                                       <div class="row"><div class="bold">Class price:</div>{{future_schedule['business_class_price']}}</div>
+                                     <div class="row"><div class="bold">Total Tickets:</div>{{airplane['business_class_available_seats']}}</div>
+                                        <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_business}}</div>
+                                        <div class="row"><div class="bold">Available Tickets:{{int(airplane['business_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{future_schedule['_id']}}&class_type=business_class" class="link">Bookings</a>
+                                 </div>
+                             </div>
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class="bold text-center">Economy Class</div>
+                                    <div class="row"><div class="bold">Class Price:</div>
+                                        {{future_schedule['economic_class_price']}}
+                                    </div>
+                                    <div class="row"><div class="bold">Total Tickets:</div>{{airplane['economy_class_available_seats']}}</div>
+                                    <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_economy}}</div>
+                                     <div class="row"><div class="bold">Available Tickets:{{int(airplane['economy_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{future_schedule['_id']}}&class_type=economy_class" class="link">Bookings</a>
+                                  </div>
+                             </div>
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class="bold text-center">First Class</div>
+                                     <div class="row"><div class="bold">Class Price:</div>
+                                         {{future_schedule['first_class_price']}}
+                                     </div>
+                                     <div class="row"><div class="bold">Total Tickets:</div>{{airplane['first_class_available_seats']}}</div>
+                                     <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_first}}</div>
+                                     <div class="row"><div class="bold">Available Tickets:{{int(airplane['first_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{future_schedule['_id']}}&class_type=first_class" class="link">Bookings</a>
+                                 </div>
+                             </div>
+                         </div>
+                            <div class="row"><div class="bold">Duration:</div>
+                                {{future_schedule['duration']}}
+                            </div>
+                            <div class="row"><div class="bold">Source Airport:</div>{{airport2['airport']}}</div>
+                            <div class="row"><div class="bold">Destination Airport:</div>{{airport1['airport']}}</div>
+                     </div>
+                </div>
+         {% endfor %}
+         </div>
+             {% else %}
+                 <div class="text-center ">No future schedules</div>
+             {% endif %}
+         <div class="text-center bold title">Past Schedules</div>
+            {% if len(past_schedules)!=0 %}
+           <div class="row">
+            {% for past_schedule in past_schedules %}
+            {% set airplane=get_total_tickets_by_airplane_id(past_schedule['airplane_id'])%}
+            {% set booked_tickets_business=get_booked_seats_by_schedule_id(past_schedule['_id'],'business_class') %}
+            {% set booked_tickets_economy=get_booked_seats_by_schedule_id(past_schedule['_id'],'economy_class') %}
+            {% set booked_tickets_first=get_booked_seats_by_schedule_id(past_schedule['_id'],'first_class') %}
+            {% set airport1=get_destination_airport_name_by_airport_id(past_schedule['destination_airport_id']) %}
+            {% set airport2=get_source_airport_name_by_airport_id(past_schedule['source_airport_id']) %}
+            {% set airplane=get_airplane_name_by_airplane_id(past_schedule['airplane_id']) %}
+                <div class="col-6 p-10">
+                     <div class="card-2 color p-5">
+                         <div class="bold text-center font">{{airplane['airplane_name']}}</div>
+                            <div class="row"><div class="bold">Arrival DateTime:</div>{{past_schedule['arrival_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                            <div class="row"><div class="bold">Departure DateTime:</div>{{past_schedule['departure_date_time'].strftime("%d-%m-%Y %I:%M %p")}}</div>
+                         <div class="row">
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class=" bold text-center">Business Class</div>
+                                       <div class="row"><div class="bold">Class price:</div>{{past_schedule['business_class_price']}}</div>
+                                        <div class="row"><div class="bold">Total Tickets:</div>{{airplane['business_class_available_seats']}}</div>
+                                        <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_business}}</div>
+                                         <div class="row"><div class="bold">Available Tickets:{{int(airplane['business_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{past_schedule['_id']}}&class_type=business_class" class="link">Bookings</a>
+                                 </div>
+                             </div>
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class="bold text-center">Economy Class</div>
+                                    <div class="row"><div class="bold">Class Price:</div>
+                                        {{past_schedule['economic_class_price']}}
+                                    </div>
+                                    <div class="row"><div class="bold">Total Tickets:</div>{{airplane['economy_class_available_seats']}}</div>
+                                    <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_economy}}</div>
+                                     <div class="row"><div class="bold">Available Tickets:{{int(airplane['economy_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{past_schedule['_id']}}&class_type=economy_class" class="link">Bookings</a>
+                                  </div>
+                             </div>
+                             <div class="col-4 p-10">
+                                 <div class="card-2 p-5">
+                                     <div class="bold text-center">First Class</div>
+                                     <div class="row"><div class="bold">Class Price:</div>
+                                         {{past_schedule['first_class_price']}}
+                                     </div>
+                                     <div class="row"><div class="bold">Total Tickets:</div>{{airplane['first_class_available_seats']}}</div>
+                                     <div class="row"><div class="bold">Booked Tickets:</div>{{booked_tickets_first}}</div>
+                                     <div class="row"><div class="bold">Available Tickets:{{int(airplane['first_class_available_seats'])-int(booked_tickets_economy)}}</div></div>
+                                     <a href="bookings?schedule_id={{past_schedule['_id']}}&class_type=first_class" class="link">Bookings</a>
+                                 </div>
+                             </div>
+                         </div>
+                            <div class="row"><div class="bold">Duration:</div>
+                                {{past_schedule['duration']}}
+                            </div>
+                            <div class="row"><div class="bold">Source Airport:</div>{{airport2['airport']}}</div>
+                            <div class="row"><div class="bold">Destination Airport:</div>{{airport1['airport']}}</div>
+                     </div>
+                </div>
+         {% endfor %}
+         </div>
+             {% else %}
+                 <div class="text-center ">No future schedules</div>
+             {% endif %}
+</div>

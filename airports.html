@@ -1,0 +1,57 @@
+{% include 'ahead.html' %}
+<div class="home-bgr">
+    <div class="text-center bold">
+        {% if message!=None %}
+           {{message}}
+        {% endif %}
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <div class="mt-10"></div>
+            <div class="card p-5">
+                <div class="title text-center">Airports</div>
+               <form action="airport_action" method="post">
+                   <div class="form-group">
+                       <input type="text" placeholder="airport name" class="form-control" id="airport" name="airport" >
+                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-airplane-fill form-icon" viewBox="0 0 16 16">
+                      <path d="M6.428 1.151C6.708.591 7.213 0 8 0s1.292.592 1.572 1.151C9.861 1.73 10 2.431 10 3v3.691l5.17 2.585a1.5 1.5 0 0 1 .83 1.342V12a.5.5 0 0 1-.582.493l-5.507-.918-.375 2.253 1.318 1.318A.5.5 0 0 1 10.5 16h-5a.5.5 0 0 1-.354-.854l1.319-1.318-.376-2.253-5.507.918A.5.5 0 0 1 0 12v-1.382a1.5 1.5 0 0 1 .83-1.342L6 6.691V3c0-.568.14-1.271.428-1.849"/>
+                      </svg>
+                   </div>
+                   <div class="mt-10 form-group">
+                       <input type="text" placeholder="airport type" name="airport_type" class="form-control">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-hash form-icon" viewBox="0 0 16 16">
+                       <path d="M8.39 12.648a1 1 0 0 0-.015.18c0 .305.21.508.5.508.266 0 .492-.172.555-.477l.554-2.703h1.204c.421 0 .617-.234.617-.547 0-.312-.188-.53-.617-.53h-.985l.516-2.524h1.265c.43 0 .618-.227.618-.547 0-.313-.188-.524-.618-.524h-1.046l.476-2.304a1 1 0 0 0 .016-.164.51.51 0 0 0-.516-.516.54.54 0 0 0-.539.43l-.523 2.554H7.617l.477-2.304c.008-.04.015-.118.015-.164a.51.51 0 0 0-.523-.516.54.54 0 0 0-.531.43L6.53 5.484H5.414c-.43 0-.617.22-.617.532s.187.539.617.539h.906l-.515 2.523H4.609c-.421 0-.609.219-.609.531s.188.547.61.547h.976l-.516 2.492c-.008.04-.015.125-.015.18 0 .305.21.508.5.508.265 0 .492-.172.554-.477l.555-2.703h2.242zm-1-6.109h2.266l-.515 2.563H6.859l.532-2.563z"/>
+                        </svg>
+                   </div>
+                   <div class="mt-10 ">
+                       <select name="location_id" class="form-control" required>
+                           <option value="">choose location</option>
+                           {% for location in locations %}
+                              <option value="{{location['_id']}}">{{location['location']}}</option>
+                           {% endfor %}
+                       </select>
+                   </div>
+                   <div class="mt-10">
+                       <input type="submit" class="btn btn-primary" value="add">
+                   </div>
+               </form>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="mt-10"></div>
+            <div class="row justify-center">
+                {% for location in locations %}
+                {% set airports=get_airports_by_location_id(location['_id']) %}
+                    <div class="col-3">
+                            <fieldset class="p-5">
+                                <legend class="p-5"><b>{{location['location']}}</b>::</legend>
+                                {% for airport in airports %}
+                                    <div>{{airport['airport']}}</div>
+                                {% endfor %}
+                            </fieldset>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
