@@ -1,55 +1,95 @@
 # Airline Reservation System
 
-A Python web application prototype for airline administration, flight scheduling, customer registration, seat selection, and booking records. The source uses Flask for HTTP routes and templates, and MongoDB for persistence.
+A local Python and MongoDB demonstration of airline scheduling, passenger bookings, and simulated payment receipts. It includes admin, airline, and customer workflows with role and record-ownership checks.
 
-**Status:** learning/demo source. The current checkout needs setup repairs and security work before a complete local demonstration or deployment.
+**This is a portfolio demo using synthetic data. No real payments or refunds are processed.**
 
-## Technology
+## Stack and architecture
 
-- Python and Flask
-- MongoDB with PyMongo
-- Jinja HTML templates and browser forms
+Python 3.12, Flask, Jinja templates, PyMongo, MongoDB, Flask-WTF, and Pillow.
 
-## Implemented workflows
+Browser forms reach Flask routes in `main.py`. `security.py` applies authentication, role checks, ownership checks, input boundaries, and image validation. Routes read and write MongoDB collections and render the root-level HTML templates. CSS and demo image assets are included under `static/`.
 
-- Administration of locations, airports, and airlines
-- Airline aircraft and schedule management
-- Customer registration and login
-- Flight search, seat selection, and booking
-- Boarding-pass views and cancellation records
-- A simulated payment-record workflow; no payment gateway integration is present
+## Local setup
 
-## Code and data structure
+Install Python 3.12 and run a local MongoDB service. Use a fresh `airline_demo` database for this version.
 
-`main.py` contains the routes, database access, and application startup. HTML files currently sit in the repository root.
+```bash
+git clone https://github.com/yash1286/Airline-Reservation-System.git
+cd Airline-Reservation-System
+python -m venv .venv
+```
 
-The `airline` database contains collections for locations, airports, airlines, airplanes, schedules, customers, bookings, boarding passes, and payments. Documents reference related records through MongoDB ObjectIds.
+Activate with `source .venv/bin/activate` on macOS/Linux, or `.venv\Scripts\activate` in Windows Command Prompt, then install:
 
-A browser request is handled by a Flask route, which reads or writes MongoDB records and renders a Jinja template.
+```bash
+python -m pip install -r requirements.txt
+```
 
-## Local setup prerequisites
+Set environment variables in your terminal. `.env.example` documents the settings; it is a reference file and is not loaded automatically.
 
-The repository is not yet a one-command runnable package. Before attempting a demo:
+macOS/Linux:
 
-1. Create a Python virtual environment and install Flask and PyMongo. The `bson` import is supplied by PyMongo.
-2. Run a local MongoDB service at the URI configured in `main.py`.
-3. Move the root HTML files into a `templates/` directory, or explicitly configure Flask's template directory.
-4. Restore the referenced static assets and create `static/profiles/` for local demo uploads.
-5. Remove the unused `idlelib` import if IDLE/Tk is unavailable in the environment.
-6. Replace legacy collection `insert()` calls with supported PyMongo operations, and validate the application with the selected dependency versions.
+```bash
+export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+export ADMIN_USERNAME="demo-admin"
+export ADMIN_PASSWORD_HASH="$(python manage.py hash-password)"
+export MONGODB_URI="mongodb://localhost:27017"
+export MONGODB_DATABASE="airline_demo"
+python manage.py init-db
+python main.py
+```
 
-After those repairs, `python main.py` starts the development server. Use synthetic data only. An end-to-end run has not been verified.
+PowerShell (activate with `.venv\Scripts\Activate.ps1`):
 
-## Known limitations
+```powershell
+$env:SECRET_KEY = python -c "import secrets; print(secrets.token_hex(32))"
+$env:ADMIN_USERNAME = "demo-admin"
+$env:ADMIN_PASSWORD_HASH = python manage.py hash-password
+$env:MONGODB_URI = "mongodb://localhost:27017"
+$env:MONGODB_DATABASE = "airline_demo"
+python manage.py init-db
+python main.py
+```
 
-- Authentication uses plaintext passwords and hard-coded demo authentication/session values.
-- Role and record-ownership checks need to be enforced consistently across routes.
-- Logout currently redirects without clearing the session.
-- The payment route stores submitted card fields, including CVV. Remove that behavior before any real use; the demo must never receive actual payment details.
-- Booking mutations need request validation, CSRF protection, and concurrency controls to prevent duplicate seat bookings.
-- Debug mode is enabled in the source.
-- Static assets, a dependency lock file, automated tests, and a reproducible setup are not included.
+Open `http://127.0.0.1:5000`. Password setup prompts locally without echoing the password. Keep your generated secret stable between restarts if you want existing sessions to remain valid. Never commit environment secrets.
 
-## Data engineering extension ideas
+## Walk through the demo
 
-Future work could turn synthetic booking events into an analytics demonstration: ingest events, validate schemas, model booking and flight facts, and calculate occupancy and cancellation metrics. These extensions are ideas and are not implemented in this repository.
+1. Log in as the configured admin. Create two locations, two airports, and an airline account with a temporary password of at least 12 characters.
+2. Log in as the airline and complete the initial password change. Add an aircraft and a future flight schedule. Aircraft images are optional; a bundled placeholder is used when omitted.
+3. Register a synthetic customer account. Search the flight, select seats, and enter synthetic passenger details.
+4. Confirm the simulated booking. The server calculates the price from the stored schedule. No card input is shown or persisted.
+5. Review bookings, boarding passes, and demo receipts. Cancellation releases the applicable seat holds and processes no real refund.
+
+## Repairs included
+
+- Password hashes replace plaintext credential storage. Legacy plaintext accounts cannot log in until explicitly reset.
+- Admin credentials and the session secret come from environment variables; there is no default admin password.
+- CSRF tokens protect POST forms. Booking creation, confirmation, cancellations, and logout are POST-only.
+- Role checks and record ownership restrict airline and customer access. Logout clears the session.
+- Card-entry and card-display fields have been removed. Confirmation records contain only demo receipt metadata.
+- Booking prices and seat capacity are validated against database records. An atomic schedule update prevents two active requests from claiming the same seat.
+- Root templates are configured explicitly, styling is bundled, image uploads are decoded and re-encoded under random filenames, and deprecated PyMongo insert calls are replaced.
+- Missing/invalid search dates are handled. Development startup is guarded and debug mode is off.
+
+## Tests
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+The tests use Flask's test client and an in-memory MongoDB substitute. They cover registration and login, legacy credential rejection, CSRF, role/ownership checks, booking and confirmation, duplicate seat claims, cancellation, upload validation, and template parsing. They do not substitute for browser testing or integration tests against a running MongoDB server.
+
+## Existing data and remaining limits
+
+Use a fresh demo database: legacy bookings do not have the new seat-claim state. No automatic destructive migration runs. Back up any existing database before resetting or migrating records. Old stored card fields are not automatically erased by this code update; clean those records separately under your data-retention process.
+
+An operator can explicitly reset a legacy account password:
+
+```bash
+python manage.py reset-password --role customer --email demo@example.com
+```
+
+The application remains a local demo. Pending seat holds have no automatic expiry. Booking, passenger, and receipt writes span multiple documents without transactions, so crashes and concurrent cancellation/confirmation need further handling before production use. Further work includes rate limiting, broader business-rule validation, transactional recovery, deployment hardening, and real MongoDB/browser integration testing. No real payment gateway is included.

@@ -1,6 +1,7 @@
 {% include 'chead.html' %}
 <div class="home-bgr">
-    <form action="book_tickets3">
+    <form action="book_tickets3" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="title text-center">Passenger Details</div>
         <div>
             <input type="hidden" name="schedule_id" value="{{schedule_id}}">

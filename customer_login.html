@@ -5,6 +5,7 @@
     <div class="card p-10 color">
       <div class="title p-5">Customer Login</div>
       <form action="customer_login_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="p-5 mt-10">
           <div class="form-group">
             <input type="email" name="email" id="email" class="form-control" placeholder="Email" required>
@@ -33,5 +34,6 @@
     </div>
   </div>
 </div>
+
 
 

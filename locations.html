@@ -10,6 +10,7 @@
             <div class="card p-5">
                 <div class="title text-center">Add Location</div>
                 <form action="locations_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <input type="text" id="location" name="location" class="form-control" placeholder="Location">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt form-icon" viewBox="0 0 16 16">
@@ -37,3 +38,4 @@
         </div>
     </div>
 </div>
+

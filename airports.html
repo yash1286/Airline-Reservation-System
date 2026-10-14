@@ -11,6 +11,7 @@
             <div class="card p-5">
                 <div class="title text-center">Airports</div>
                <form action="airport_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                    <div class="form-group">
                        <input type="text" placeholder="airport name" class="form-control" id="airport" name="airport" >
                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-airplane-fill form-icon" viewBox="0 0 16 16">

@@ -6,6 +6,7 @@
             <div class="card p-5">
                 <div class="title text-center">Add Airplanes</div>
                 <form action="add_airplane_action" method="post" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="p-5">
                         <div class="form-group">
                             <input type="text" placeholder="Airplane Name" name="airplane_name" class="form-control">

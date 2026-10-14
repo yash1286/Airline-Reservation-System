@@ -5,6 +5,7 @@
         <div class="card p-10 color">
                 <div class=" p-5 title">Admin Login</div>
                 <form action="admin_login_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mt-10 p-5">
                         <div class="form-group">
                             <input type="text" placeholder="Username" class="form-control " name="username" required id="username">

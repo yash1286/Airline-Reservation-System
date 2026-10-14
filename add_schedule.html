@@ -9,6 +9,7 @@
     <div class="card p-10">
         <div class="title text-center">Add Schedules</div>
         <form action="schedules_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row">
                 <div class="col-6 p-5">
                    <select name="source_airport_id" class="form-control">

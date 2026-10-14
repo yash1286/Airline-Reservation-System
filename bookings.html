@@ -63,7 +63,8 @@
                        {% if hours>12 %}
                        <div class="row">
                        <div class="col-7 p-5 text-center">You will get ${{int(booking['total_price'])*0.9}} (90%) if you cancel now </div>
-                       <div class="p-5 col-5"><a href="/cancel?booking_id={{booking['_id']}}&payment_id={{payment['_id']}}&refund_amount={{int(booking['total_price'])*0.9}}" class="btn-3 btn-primary">Cancel</a></div>
+                       <div class="p-5 col-5"><form action="/cancel" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="booking_id" value="{{booking['_id']}}"><button class="btn btn-primary" type="submit">Cancel</button></form></div>
                        </div>
                        {% endif %}
                        {% endif %}

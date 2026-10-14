@@ -1,15 +1,15 @@
-from idlelib.debugobj_r import remote_object_tree_item
 from bson import ObjectId
-from flask import Flask,request,render_template,redirect,session
-from pyexpat.errors import messages
+from flask import Flask,request,render_template,redirect,session,abort
+from flask_wtf.csrf import CSRFProtect
+from security import configure_security, password_hash, verify_password, booking_access, safe_upload
 import datetime
-app=Flask(__name__)
+app=Flask(__name__, template_folder=".")
 import pymongo
 import os
 App=os.path.dirname(os.path.abspath(__file__))
 profiles=App+"/static/profiles"
-myclient=pymongo.MongoClient("mongodb://localhost:27017")
-mydatabase=myclient["airline"]
+myclient=pymongo.MongoClient(os.environ.get("MONGODB_URI", "mongodb://localhost:27017"), serverSelectionTimeoutMS=5000)
+mydatabase=myclient[os.environ.get("MONGODB_DATABASE", "airline_demo")]
 locations_collection=mydatabase["locations"]
 airports_collection=mydatabase["airports"]
 airlines_collection=mydatabase["airlines"]
@@ -19,7 +19,9 @@ boarding_pass_collection=mydatabase["boarding_pass"]
 bookings_collection=mydatabase["bookings"]
 payments_collection=mydatabase["payments"]
 customers_collection=mydatabase["customers"]
-app.secret_key="Yashwanth"
+configure_security(app, mydatabase)
+CSRFProtect(app)
+os.makedirs(profiles, exist_ok=True)
 
 @app.route("/")
 def index():
@@ -33,7 +35,8 @@ def admin():
 def admin_login_action():
     username=request.form.get("username")
     password = request.form.get("password")
-    if username=="admin" and password == "admin":
+    if username == os.environ.get("ADMIN_USERNAME") and verify_password(os.environ.get("ADMIN_PASSWORD_HASH"), password):
+        session.clear()
         session["role"]="admin"
         return redirect("/admin_home")
     else:
@@ -51,10 +54,9 @@ def customer_login():
 def customer_login_action():
     email=request.form.get("email")
     password=request.form.get("password")
-    query={"email":email,"password":password}
-    count=customers_collection.count_documents(query)
-    if count>0:
-        customer=customers_collection.find_one(query)
+    customer=customers_collection.find_one({"email": email})
+    if customer and verify_password(customer.get("password_hash"), password):
+        session.clear()
         session['customer_id']=str(customer['_id'])
         session['role']="customer"
         return redirect("/customer_home")
@@ -87,7 +89,7 @@ def customer_registration_action():
     count=customers_collection.count_documents(query)
     if count>0:
         return render_template("message.html",message="Duplicate Phone Number")
-    query={"first_name":first_name,"last_name":last_name,"phone":phone,"email":email,"password":password,"bod":dob,"address":address,"state":state,"city":city,"zipcode":zipcode}
+    query={"first_name":first_name,"last_name":last_name,"phone":phone,"email":email,"password_hash":password_hash(password),"bod":dob,"address":address,"state":state,"city":city,"zipcode":zipcode}
     customers_collection.insert_one(query)
     return render_template("message.html",message="Customer Registration Successful")
 
@@ -103,10 +105,9 @@ def airline_login():
 def airline_login_action():
     email=request.form.get("email")
     password=request.form.get("password")
-    query={"email":email,"password":password}
-    count=airlines_collection.count_documents(query)
-    if count>0:
-        airline=airlines_collection.find_one(query)
+    airline=airlines_collection.find_one({"email": email})
+    if airline and verify_password(airline.get("password_hash"), password):
+        session.clear()
         if airline['is_logged']:
             session['airline_id']=str(airline['_id'])
             session['role']="airline"
@@ -125,7 +126,8 @@ def change_airline_password_action():
     if password2!=password:
         return render_template("apmessage.html",message="Password and confirm password not matched")
 
-    query ={"$set":{"is_logged":True,"password":password}}
+    query ={"$set":{"is_logged":True,"password_hash":password_hash(password)}}
+    query["$unset"] = {"password": ""}
     airlines_collection.update_one({"_id":ObjectId(airline_id)},query)
     session['airline_id'] = str(airline_id)
     session['role'] = "airline"
@@ -158,7 +160,7 @@ def airline_registration_action():
     count = airlines_collection.count_documents(query)
     if count > 0:
         return redirect("/airline_registration?message=Duplicate Phone Number")
-    query={"airline":airline,"email":email,"phone":phone,"password":password,"established_year":established_year,"address":address,"city":city,"zipcode":zipcode,"about":about,"is_logged":False}
+    query={"airline":airline,"email":email,"phone":phone,"password_hash":password_hash(password),"established_year":established_year,"address":address,"city":city,"zipcode":zipcode,"about":about,"is_logged":False}
     airlines_collection.insert_one(query)
     return redirect("/airline_registration?message=Airline Added Successfully")
 
@@ -166,8 +168,9 @@ def airline_registration_action():
 def airline_home():
     return render_template("airline_home.html")
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
+    session.clear()
     return redirect("/")
 
 @app.route("/about")
@@ -240,10 +243,9 @@ def add_airplane_action():
     first_class_available_seats=request.form.get("first_class_available_seats")
     airline_id= session['airline_id']
     image=request.files.get("image")
-    path=profiles+"/"+image.filename
-    image.save(path)
-    query={"airplane_name":airplane_name,"image":image.filename,"description":description,"economy_class_available_seats":economy_class_available_seats,"business_class_available_seats":business_class_available_seats,"first_class_available_seats":first_class_available_seats,"airline_id":ObjectId(airline_id)}
-    airplanes_collection.insert(query)
+    image_name = safe_upload(image, profiles)
+    query={"airplane_name":airplane_name,"image":image_name,"description":description,"economy_class_available_seats":economy_class_available_seats,"business_class_available_seats":business_class_available_seats,"first_class_available_seats":first_class_available_seats,"airline_id":ObjectId(airline_id)}
+    airplanes_collection.insert_one(query)
     return render_template("apmessage.html",message="airplane added successfully")
 
 def get_airline_by_airline_id(airline_id):
@@ -311,7 +313,7 @@ def schedules_action():
     if count!=0:
         return render_template("apmessage.html",message="time collision occurred")
     query={"arrival_date_time":arrival_date_time,"departure_date_time":departure_date_time,"flight_number":flight_number,"business_class_price":business_class_price,"economic_class_price":economic_class_price,"first_class_price":first_class_price,"duration":str(duration),"source_airport_id":ObjectId(source_airport_id),"destination_airport_id":ObjectId(destination_airport_id),"airplane_id":ObjectId(airplane_id),"departure_date":departure_date}
-    schedules_collection.insert(query)
+    schedules_collection.insert_one(query)
     return render_template("apmessage.html",message="schedule added successfully")
 
 @app.route("/view_schedule")
@@ -366,16 +368,16 @@ def search_flights():
     source_location_id = request.args.get("source_location_id")
     destination_location_id = request.args.get("destination_location_id")
     date = request.args.get("date")
-    if source_location_id == None:
-        source_location_id == ""
-    if destination_location_id == None:
-        destination_location_id = ""
-    if date == None:
-        date = datetime.datetime.now()
-    if source_location_id == "" or destination_location_id == "" or date == "":
-        query = {"abc":"abc"}
-    else:
+    source_location_id = source_location_id or ""
+    destination_location_id = destination_location_id or ""
+    date = date or datetime.datetime.now().strftime("%Y-%m-%d")
+    try:
         date = datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        abort(400, "Invalid date")
+    if not source_location_id or not destination_location_id:
+        query = {"_id": {"$exists": False}}
+    else:
         query = {"location_id": ObjectId(source_location_id)}
         source_airports = airports_collection.find(query)
         source_airports = list(source_airports)
@@ -428,28 +430,55 @@ def book_tickets2():
         total_price = int(schedule['business_class_price'])*len(selected_seats)
     return render_template("book_tickets2.html",schedule=schedule,selected_seats=selected_seats,schedule_id=schedule_id,class_type=class_type,total_seats=total_seats, total_price=total_price)
 
-@app.route("/book_tickets3")
+@app.route("/book_tickets3", methods=["POST"])
 def book_tickets3():
     customer_id=session['customer_id']
-    schedule_id=request.args.get("schedule_id")
-    class_type=request.args.get("class_type")
-    total_seats=request.args.get("total_seats")
-    total_price=request.args.get("total_price")
+    schedule_id=request.form.get("schedule_id")
+    class_type=request.form.get("class_type")
+    total_seats=request.form.get("total_seats")
+    schedule = schedules_collection.find_one({"_id": ObjectId(schedule_id)})
+    if not schedule or schedule['departure_date_time'] <= datetime.datetime.now():
+        abort(400, "Flight unavailable")
+    airplane = airplanes_collection.find_one({"_id": schedule['airplane_id']})
+    fields = {"first_class": ("first_class_available_seats", "first_class_price"),
+              "economy_class": ("economy_class_available_seats", "economic_class_price"),
+              "business_class": ("business_class_available_seats", "business_class_price")}
+    if class_type not in fields or not airplane:
+        abort(400, "Invalid cabin")
+    capacity_field, price_field = fields[class_type]
+    total_seats = int(airplane[capacity_field])
+    selected = [i for i in range(1, total_seats+1) if request.form.get("seat_number"+str(i)) is not None]
+    if not selected:
+        abort(400, "Select at least one seat")
+    for i in selected:
+        if not request.form.get("name"+str(i), "").strip():
+            abort(400, "Passenger name required")
+    total_price = int(schedule[price_field]) * len(selected)
     booking_date=datetime.datetime.now()
     query={"status":"Payment Pending", "schedule_id":ObjectId(schedule_id),"class_type":class_type, "customer_id":ObjectId(customer_id),"booking_date":booking_date,"total_price":total_price}
-    result=bookings_collection.insert_one(query)
+    claims = [class_type + ":" + str(i) for i in selected]
+    claim_result = schedules_collection.update_one(
+        {"_id": schedule['_id'], "reserved_seats": {"$nin": claims}},
+        {"$addToSet": {"reserved_seats": {"$each": claims}}})
+    if not claim_result.modified_count:
+        abort(409, "A selected seat is already reserved")
+    try:
+        result=bookings_collection.insert_one(query)
+    except Exception:
+        schedules_collection.update_one({"_id": schedule['_id']}, {"$pull": {"reserved_seats": {"$in": claims}}})
+        raise
     booking_id=result.inserted_id
     seat_numbers = []
     for i in range(1,int(total_seats)+1):
-        seat_number=request.args.get("seat_number"+str(i))
+        seat_number=request.form.get("seat_number"+str(i))
         if seat_number != None:
-            name=request.args.get("name"+str(i))
-            age=request.args.get("age"+str(i))
-            phone=request.args.get("phone"+str(i))
-            gender=request.args.get("gender"+str(i))
-            dob = request.args.get("dob" + str(i))
-            email = request.args.get("email" + str(i))
-            query={"seat_number":seat_number,"name":name,"phone":phone,"age":age,"gender":gender,"customer_id":ObjectId(customer_id),"booking_id":booking_id,"dob":dob,"email":email,"status":"Booked"}
+            name=request.form.get("name"+str(i))
+            age=request.form.get("age"+str(i))
+            phone=request.form.get("phone"+str(i))
+            gender=request.form.get("gender"+str(i))
+            dob = request.form.get("dob" + str(i))
+            email = request.form.get("email" + str(i))
+            query={"seat_number":i,"name":name,"phone":phone,"age":age,"gender":gender,"customer_id":ObjectId(customer_id),"booking_id":booking_id,"dob":dob,"email":email,"status":"Booked"}
             boarding_pass_collection.insert_one(query)
             seat_numbers.append(i)
     query = {"_id":booking_id}
@@ -461,23 +490,23 @@ def book_tickets3():
     boarding_passes=list(boarding_passes)
     return render_template("book_tickets3.html",booking_id=booking_id,booking=booking,boarding_passes=boarding_passes,total_price=total_price)
 
-@app.route("/payments")
+@app.route("/payments", methods=["POST"])
 def payments():
-    amount=request.args.get("total_price")
-    card_number=request.args.get("card_number")
-    card_type=request.args.get("card_type")
-    card_holder_name=request.args.get("card_holder_name")
-    cvv=request.args.get("cvv")
-    expiry_date=request.args.get("expiry_date")
-    booking_id=request.args.get("booking_id")
-    customer_id=session['customer_id']
-    payment_date=datetime.datetime.now()
-    query={"amount":amount,"status":"payment success","card_number":card_number,"card_type":card_type,"card_holder_name":card_holder_name,"cvv":cvv,"expiry_date":expiry_date,"payment_date":payment_date,"booking_id":ObjectId(booking_id),"customer_id":ObjectId(customer_id)}
-    payments_collection.insert_one(query)
-    query1={"_id":ObjectId(booking_id)}
-    query2={"$set":{"status":"Booked"}}
-    bookings_collection.update_one(query1,query2)
-    return render_template("payments.html",message="Booking Success")
+    booking_id = ObjectId(request.form.get("booking_id"))
+    booking = booking_access(mydatabase, booking_id, customer_only=True)
+    # Only a state transition can create a receipt; repeated requests are harmless.
+    result = bookings_collection.update_one(
+        {"_id": booking_id, "status": "Payment Pending"},
+        {"$set": {"status": "Booked"}})
+    if result.modified_count:
+        payments_collection.update_one({"booking_id": booking_id}, {"$setOnInsert": {
+            "amount": booking['total_price'], "status": "Simulated payment",
+            "method": "demo", "payment_date": datetime.datetime.now(),
+            "customer_id": booking['customer_id']}}, upsert=True)
+    elif booking['status'] != "Booked":
+        abort(409, "Booking cannot be confirmed")
+    return render_template("payments.html", message="Demo booking confirmed. No money was charged.")
+
 
 @app.route("/bookings")
 def bookings():
@@ -510,26 +539,37 @@ def view_payments():
     payment=payments_collection.find_one(query)
     return render_template("view_payments.html",payment=payment)
 
-@app.route("/cancel")
+@app.route("/cancel", methods=["POST"])
 def cancel():
-    booking_id=request.args.get("booking_id")
-    payment_id=request.args.get("payment_id")
-    refund_amount=request.args.get("refund_amount")
-    query1 = {'_id': ObjectId(booking_id)}
-    query2 = {"$set": {"status": "Cancelled"}}
-    bookings_collection.update_one(query1, query2)
-    query3={'_id':ObjectId(payment_id)}
-    query4={"$set":{"status":"90% refunded","amount":refund_amount}}
-    payments_collection.update_one(query3,query4)
+    booking_id = ObjectId(request.form.get("booking_id"))
+    booking = booking_access(mydatabase, booking_id, customer_only=True)
+    result = bookings_collection.update_one(
+        {"_id": booking_id, "status": {"$in": ["Booked", "Payment Pending"]}},
+        {"$set": {"status": "Cancelled"}})
+    if result.modified_count:
+        # Release only passengers not already cancelled to avoid releasing a rebooked seat.
+        active = list(boarding_pass_collection.find({"booking_id": booking_id, "status": "Booked"}))
+        claims = [booking['class_type'] + ":" + str(p['seat_number']) for p in active]
+        boarding_pass_collection.update_many({"booking_id": booking_id}, {"$set": {"status": "Cancelled"}})
+        schedules_collection.update_one({"_id": booking['schedule_id']}, {"$pull": {"reserved_seats": {"$in": claims}}})
+        payments_collection.update_one({"booking_id": booking_id}, {"$set": {"status": "Demo cancelled"}})
     return redirect("/bookings")
 
-@app.route("/cancel1")
+
+@app.route("/cancel1", methods=["POST"])
 def cancel1():
-    boarding_pass_id = request.args.get("boarding_pass_id")
-    query1 = {'_id': ObjectId(boarding_pass_id)}
-    query2 = {"$set": {"status": "Cancelled"}}
-    boarding_pass_collection.update_one(query1, query2)
-    return render_template("cmessage.html",message="cancelled")
+    passenger_id = ObjectId(request.form.get("boarding_pass_id"))
+    passenger = boarding_pass_collection.find_one({"_id": passenger_id})
+    if not passenger:
+        abort(404)
+    booking = booking_access(mydatabase, passenger['booking_id'], customer_only=True)
+    result = boarding_pass_collection.update_one({"_id": passenger_id, "status": "Booked"}, {"$set": {"status": "Cancelled"}})
+    if result.modified_count:
+        seat = int(passenger['seat_number'])
+        bookings_collection.update_one({"_id": booking['_id']}, {"$pull": {"seat_numbers": seat}})
+        schedules_collection.update_one({"_id": booking['schedule_id']}, {"$pull": {"reserved_seats": booking['class_type'] + ":" + str(seat)}})
+    return render_template("cmessage.html", message="Demo passenger cancelled. No real refund is processed.")
+
 
 def get_payment_details_by_booking_id(booking_id):
     query={"booking_id":booking_id}
@@ -553,11 +593,9 @@ def boarding_pass():
     return render_template("boarding_pass.html",boarding_passes=boarding_passes,booking=booking,get_source_airport_name_by_airport_id=get_source_airport_name_by_airport_id,get_destination_airport_name_by_airport_id=get_destination_airport_name_by_airport_id,get_airplane_name_by_airplane_id=get_airplane_name_by_airplane_id,get_source_location_by_airport_id=get_source_location_by_airport_id,get_destination_location_by_airport_id=get_destination_location_by_airport_id,get_seats_by_airplane_id=get_seats_by_airplane_id,get_schedule_by_schedule_id=get_schedule_by_schedule_id,get_customer_by_customer_id=get_customer_by_customer_id,get_payment_details_by_booking_id=get_payment_details_by_booking_id,int=int,diff_hours_from_today_and_departure_time=diff_hours_from_today_and_departure_time)
 
 def is_seat_booked_by_seat_number_and_schedule_id_and_class_type(seat_number, schedule_id, class_type):
-    query = {"seat_numbers": seat_number,"schedule_id": ObjectId(schedule_id), "class_type": class_type, "status": "Booked"}
-    count = bookings_collection.count_documents(query)
-    if count > 0:
-        return True
-    return False
+    schedule = schedules_collection.find_one({"_id": ObjectId(schedule_id)})
+    return bool(schedule and class_type + ":" + str(seat_number) in schedule.get("reserved_seats", []))
+
 
 def diff_hours_from_today_and_departure_time(departure_date_time):
     today=datetime.datetime.now()
@@ -608,5 +646,7 @@ def get_total_tickets_by_airplane_id(airplane_id):
     airplane=airplanes_collection.find_one(query)
     return airplane
 
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", debug=False)
+
 

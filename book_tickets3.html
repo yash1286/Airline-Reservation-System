@@ -34,34 +34,12 @@
         <div class="col-4 p-10">
             <div class="card">
                 <div class="text-center bold">$ {{total_price}}</div>
-                <form action="payments">
-                    <div>
-                        <input type="hidden" name="total_price" value="{{total_price}}">
-                        <input type="hidden" name="booking_id" value="{{booking_id}}">
-                    </div>
-                    <div class="p-5">
-                        <select required class="form-control" name="card_type">
-                            <option value="">Choose Card</option>
-                            <option value="credit card">Credit Card</option>
-                            <option value="debit card">Debit Card</option>
-                        </select>
-                    </div>
-                    <div class="p-5">
-                        <input type="number" class="form-control" placeholder="enter cardnumber" name="card_number">
-                    </div>
-                    <div class="p-5">
-                        <input type="text" class="form-control" placeholder="enter card holder name" name="card_holder_name">
-                    </div>
-                    <div class="p-5">
-                        <input type="number" class="form-control" placeholder="enter cvv" name="cvv">
-                    </div>
-                    <div class="p-5">
-                        <input type="month" class="form-control" name="expiry_date">
-                    </div>
-                    <div class="p-5">
-                        <input type="submit" value="Make Payment" class="btn-1 btn-primary">
-                    </div>
-                </form>
+                <form action="payments" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="booking_id" value="{{booking_id}}">
+<p>Demo only. No card details or money are collected.</p>
+<button class="btn btn-primary" type="submit">Confirm demo booking</button>
+</form>
             </div>
         </div>
     </div>

@@ -6,6 +6,8 @@
     <div class="col-8">
         <a href="/" class="nav-link">home </a>
         <a href="/add_airplane" class="nav-link">Airplane</a>
-        <a href="/logout" class="nav-link">logout</a>
+        <form action="/logout" method="post" class="inline">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="nav-link" type="submit">Log out</button></form>
     </div>
 </nav>
+

@@ -5,6 +5,7 @@
         <div class="card-1 p-10">
             <div class="title text-center">Customers Registration</div>
         <form action="customer_registration_action" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-row">
                 <div class="p-5 col-6">
                     <div class="form-group">

@@ -47,7 +47,8 @@
                                <div class="bold">Status:{{boarding_pass['status']}}</div>
                                {% if boarding_pass['status']=="Booked" %}
                                {% if hours>12 %}
-                               <div class="p-5"><a href="/cancel1?boarding_pass_id={{boarding_pass['_id']}}&payment_id={{payment['_id']}}&refund_amount={{int(booking['total_price'])*0.9}}" class="btn-3 btn-primary">Cancel</a></div>
+                               <div class="p-5"><form action="/cancel1" method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="boarding_pass_id" value="{{boarding_pass['_id']}}"><button class="btn btn-primary" type="submit">Cancel</button></form></div>
                                {% endif %}
                                {% endif %}
 
